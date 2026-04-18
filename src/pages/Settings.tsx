@@ -1,57 +1,42 @@
 import { useState } from "react";
 import Icon from "@/components/ui/icon";
 import { useTheme } from "@/lib/theme";
-import { loadFromStorage, saveToStorage } from "@/lib/storage";
+import { saveToStorage } from "@/lib/storage";
 
-export default function Settings() {
+interface Props {
+  onLogout: () => void;
+  onExport: () => void;
+  userName: string;
+}
+
+export default function Settings({ onLogout, onExport, userName }: Props) {
   const { isDark, toggle: toggleTheme } = useTheme();
   const [notifSound, setNotifSound] = useState(true);
   const [notifVibro, setNotifVibro] = useState(false);
   const [startDay, setStartDay] = useState("Понедельник");
-  const [name, setName] = useState(() => loadFromStorage("user_name", "Александр"));
+  const [name, setName] = useState(userName);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
-  const Toggle = ({
-    value,
-    onChange,
-  }: {
-    value: boolean;
-    onChange: (v: boolean) => void;
-  }) => (
+  const Toggle = ({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) => (
     <button
       onClick={() => onChange(!value)}
-      className={`relative w-11 h-6 rounded-full transition-colors ${
-        value ? "bg-foreground" : "bg-muted"
-      }`}
+      className={`relative w-11 h-6 rounded-full transition-colors ${value ? "bg-foreground" : "bg-muted"}`}
     >
-      <span
-        className={`absolute top-1 w-4 h-4 bg-background rounded-full transition-all ${
-          value ? "left-6" : "left-1"
-        }`}
-      />
+      <span className={`absolute top-1 w-4 h-4 bg-background rounded-full transition-all ${value ? "left-6" : "left-1"}`} />
     </button>
   );
 
   const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
     <div className="mb-8">
-      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3">
-        {title}
-      </p>
+      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3">{title}</p>
       <div className="bg-card border border-border rounded-2xl overflow-hidden divide-y divide-border">
         {children}
       </div>
     </div>
   );
 
-  const Row = ({
-    icon,
-    label,
-    children,
-  }: {
-    icon: string;
-    label: string;
-    children: React.ReactNode;
-  }) => (
-    <div className="flex items-center gap-4 px-4 py-3.5">
+  const Row = ({ icon, label, children, onClick }: { icon: string; label: string; children: React.ReactNode; onClick?: () => void }) => (
+    <div className="flex items-center gap-4 px-4 py-3.5 cursor-default" onClick={onClick}>
       <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center flex-shrink-0">
         <Icon name={icon as never} size={15} className="text-foreground" />
       </div>
@@ -62,7 +47,6 @@ export default function Settings() {
 
   return (
     <div className="px-6 py-8 max-w-lg mx-auto animate-fade-in">
-      {/* Header */}
       <div className="mb-8">
         <h1 className="font-display text-4xl text-foreground">Настройки</h1>
       </div>
@@ -71,7 +55,7 @@ export default function Settings() {
       <Section title="Профиль">
         <div className="flex items-center gap-4 px-4 py-4">
           <div className="w-12 h-12 rounded-2xl bg-foreground text-background flex items-center justify-center text-lg font-semibold flex-shrink-0">
-            {name.charAt(0)}
+            {name.charAt(0).toUpperCase()}
           </div>
           <div className="flex-1">
             <input
@@ -109,24 +93,49 @@ export default function Settings() {
         <Row icon="Smartphone" label="Вибрация">
           <Toggle value={notifVibro} onChange={setNotifVibro} />
         </Row>
-        <Row icon="Clock" label="Тихий режим">
-          <span className="text-sm text-muted-foreground">23:00 — 07:00</span>
-        </Row>
       </Section>
 
       {/* Data */}
       <Section title="Данные">
-        <Row icon="Download" label="Экспорт данных">
-          <Icon name="ChevronRight" size={15} className="text-muted-foreground" />
-        </Row>
-        <Row icon="Trash2" label="Очистить историю">
+        <Row icon="Download" label="Скачать задачи (JSON)" onClick={onExport}>
           <Icon name="ChevronRight" size={15} className="text-muted-foreground" />
         </Row>
       </Section>
 
-      <p className="text-center text-xs text-muted-foreground mt-4">
-        Версия 1.0.0 · день
-      </p>
+      {/* Account */}
+      <Section title="Аккаунт">
+        <Row icon="LogOut" label="Выйти из аккаунта" onClick={() => setShowLogoutConfirm(true)}>
+          <Icon name="ChevronRight" size={15} className="text-muted-foreground" />
+        </Row>
+      </Section>
+
+      {/* Logout confirm */}
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 bg-foreground/20 backdrop-blur-sm flex items-end justify-center z-50 pb-8 px-6 animate-fade-in">
+          <div className="w-full max-w-sm bg-card border border-border rounded-2xl p-6 space-y-4 animate-slide-up">
+            <div className="text-center">
+              <p className="text-sm font-semibold text-foreground mb-1">Выйти из аккаунта?</p>
+              <p className="text-xs text-muted-foreground">Задачи останутся на устройстве</p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowLogoutConfirm(false)}
+                className="flex-1 py-2.5 bg-muted text-foreground rounded-xl text-sm font-medium hover:bg-secondary transition-colors"
+              >
+                Отмена
+              </button>
+              <button
+                onClick={onLogout}
+                className="flex-1 py-2.5 bg-destructive text-white rounded-xl text-sm font-medium hover:opacity-80 transition-opacity"
+              >
+                Выйти
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <p className="text-center text-xs text-muted-foreground mt-4">Версия 1.0.0 · день</p>
     </div>
   );
 }

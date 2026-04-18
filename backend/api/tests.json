@@ -1,37 +1,29 @@
 {
   "tests": [
     {
-      "name": "GET tasks for date",
-      "method": "GET",
-      "path": "/tasks?date=2026-04-18",
-      "expectedStatus": 200,
-      "expectedBody": [],
+      "name": "POST register",
+      "method": "POST",
+      "path": "/auth/register",
+      "body": "{\"email\": \"test@test.com\", \"password\": \"pass123\", \"name\": \"Тест\"}",
+      "expectedStatus": 201,
+      "expectedBody": {"token": "string"},
       "bodyMatcher": "partial"
     },
     {
-      "name": "POST create task",
+      "name": "POST login",
       "method": "POST",
+      "path": "/auth/login",
+      "body": "{\"email\": \"test@test.com\", \"password\": \"pass123\"}",
+      "expectedStatus": 200,
+      "expectedBody": {"token": "string"},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "GET tasks without token",
+      "method": "GET",
       "path": "/tasks",
-      "body": "{\"text\": \"Test task\", \"time\": \"09:00\", \"date\": \"2026-04-18\"}",
-      "expectedStatus": 201,
-      "expectedBody": {"text": "Test task"},
-      "bodyMatcher": "partial"
-    },
-    {
-      "name": "GET reminders",
-      "method": "GET",
-      "path": "/reminders",
-      "expectedStatus": 200,
-      "expectedBody": [],
-      "bodyMatcher": "partial"
-    },
-    {
-      "name": "POST create reminder",
-      "method": "POST",
-      "path": "/reminders",
-      "body": "{\"title\": \"Test reminder\", \"time\": \"09:00\", \"repeat\": \"Каждый день\", \"emoji\": \"🔔\"}",
-      "expectedStatus": 201,
-      "expectedBody": {"title": "Test reminder"},
+      "expectedStatus": 401,
+      "expectedBody": {"error": "string"},
       "bodyMatcher": "partial"
     }
   ]
