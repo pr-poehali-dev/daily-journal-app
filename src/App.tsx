@@ -6,6 +6,7 @@ import Home from "@/pages/Home";
 import CalendarPage from "@/pages/CalendarPage";
 import Reminders from "@/pages/Reminders";
 import Settings from "@/pages/Settings";
+import { ThemeProvider } from "@/lib/theme";
 
 type Tab = "home" | "calendar" | "reminders" | "settings";
 
@@ -27,52 +28,52 @@ const App = () => {
   };
 
   return (
-    <TooltipProvider>
-      <Toaster />
-      <div className="min-h-screen bg-background flex flex-col max-w-lg mx-auto relative">
-        {/* Main content */}
-        <main className="flex-1 overflow-y-auto pb-28">
-          {pages[tab]}
-        </main>
+    <ThemeProvider>
+      <TooltipProvider>
+        <Toaster />
+        <div className="min-h-screen bg-background flex flex-col max-w-lg mx-auto relative">
+          <main className="flex-1 overflow-y-auto pb-28">
+            {pages[tab]}
+          </main>
 
-        {/* Bottom nav */}
-        <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-lg bg-background/90 backdrop-blur-xl border-t border-border px-2 pb-2">
-          <div className="flex items-center justify-around py-2">
-            {NAV.map((item) => {
-              const active = tab === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => setTab(item.id)}
-                  className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl transition-all ${
-                    active ? "text-foreground" : "text-muted-foreground hover:text-foreground/70"
-                  }`}
-                >
-                  <div
-                    className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
-                      active ? "bg-foreground" : ""
+          <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-lg bg-background/90 backdrop-blur-xl border-t border-border px-2 pb-2">
+            <div className="flex items-center justify-around py-2">
+              {NAV.map((item) => {
+                const active = tab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => setTab(item.id)}
+                    className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl transition-all ${
+                      active ? "text-foreground" : "text-muted-foreground hover:text-foreground/70"
                     }`}
                   >
-                    <Icon
-                      name={item.icon as never}
-                      size={17}
-                      className={active ? "text-background" : ""}
-                    />
-                  </div>
-                  <span
-                    className={`text-[10px] font-medium tracking-wide transition-all ${
-                      active ? "text-foreground" : ""
-                    }`}
-                  >
-                    {item.label}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </nav>
-      </div>
-    </TooltipProvider>
+                    <div
+                      className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
+                        active ? "bg-foreground" : ""
+                      }`}
+                    >
+                      <Icon
+                        name={item.icon as never}
+                        size={17}
+                        className={active ? "text-background" : ""}
+                      />
+                    </div>
+                    <span
+                      className={`text-[10px] font-medium tracking-wide transition-all ${
+                        active ? "text-foreground" : ""
+                      }`}
+                    >
+                      {item.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </nav>
+        </div>
+      </TooltipProvider>
+    </ThemeProvider>
   );
 };
 

@@ -1,12 +1,14 @@
 import { useState } from "react";
 import Icon from "@/components/ui/icon";
+import { useTheme } from "@/lib/theme";
+import { loadFromStorage, saveToStorage } from "@/lib/storage";
 
 export default function Settings() {
-  const [darkMode, setDarkMode] = useState(false);
+  const { isDark, toggle: toggleTheme } = useTheme();
   const [notifSound, setNotifSound] = useState(true);
   const [notifVibro, setNotifVibro] = useState(false);
   const [startDay, setStartDay] = useState("Понедельник");
-  const [name, setName] = useState("Александр");
+  const [name, setName] = useState(() => loadFromStorage("user_name", "Александр"));
 
   const Toggle = ({
     value,
@@ -74,7 +76,7 @@ export default function Settings() {
           <div className="flex-1">
             <input
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => { setName(e.target.value); saveToStorage("user_name", e.target.value); }}
               className="text-sm font-semibold text-foreground bg-transparent outline-none w-full border-b border-transparent focus:border-border transition-colors"
             />
             <p className="text-xs text-muted-foreground mt-0.5">Нажми, чтобы изменить имя</p>
@@ -84,8 +86,8 @@ export default function Settings() {
 
       {/* Appearance */}
       <Section title="Внешний вид">
-        <Row icon="Moon" label="Тёмная тема">
-          <Toggle value={darkMode} onChange={setDarkMode} />
+        <Row icon={isDark ? "Sun" : "Moon"} label="Тёмная тема">
+          <Toggle value={isDark} onChange={toggleTheme} />
         </Row>
         <Row icon="Calendar" label="Первый день недели">
           <select
