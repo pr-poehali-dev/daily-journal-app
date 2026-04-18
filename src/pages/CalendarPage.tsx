@@ -47,6 +47,7 @@ export default function CalendarPage() {
   const [allTasks, setAllTasks] = useState<Task[]>(() => getAllTasks());
   const [showForm, setShowForm] = useState(false);
   const [showWeek, setShowWeek] = useState(false);
+  const [weekOffset, setWeekOffset] = useState(0);
   const [form, setForm] = useState<AddForm>(() => makeEmptyForm(todayKey));
 
   useEffect(() => {
@@ -110,18 +111,7 @@ export default function CalendarPage() {
           <h1 className="font-display text-4xl text-foreground">{MONTHS_RU[month]}</h1>
           <p className="text-muted-foreground text-sm mt-0.5">{year}</p>
         </div>
-        <div className="flex gap-1.5">
-          <button
-            onClick={() => setShowWeek(!showWeek)}
-            className={`flex items-center gap-1.5 px-3 h-9 rounded-lg border text-xs font-medium transition-all ${
-              showWeek
-                ? "bg-foreground text-background border-foreground"
-                : "border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground"
-            }`}
-          >
-            <Icon name="LayoutList" size={13} />
-            Неделя
-          </button>
+        <div className="flex gap-1">
           <button
             onClick={() => setCurrent(new Date(year, month - 1, 1))}
             className="w-9 h-9 rounded-lg border border-border flex items-center justify-center hover:bg-secondary transition-colors"
@@ -136,82 +126,6 @@ export default function CalendarPage() {
           </button>
         </div>
       </div>
-
-      {/* Week view */}
-      {showWeek && (
-        <div className="mb-6 animate-fade-in">
-          <div className="flex items-center gap-2 mb-3">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
-              Неделя с {(() => {
-                const days = getWeekDays(selected);
-                const [,m,d] = days[0].split("-");
-                return `${Number(d)} ${MONTHS_SHORT[Number(m)-1]}`;
-              })()}
-            </p>
-          </div>
-          <div className="space-y-1">
-            {getWeekDays(selected).map((dateKey) => {
-              const tasks = allTasks.filter((t) => t.date === dateKey);
-              const [,m,d] = dateKey.split("-");
-              const dayOfWeek = new Date(dateKey + "T00:00:00").getDay();
-              const isToday = dateKey === todayKey;
-              const isSelected = dateKey === selected;
-              return (
-                <div key={dateKey}>
-                  <button
-                    onClick={() => { setSelected(dateKey); setShowWeek(false); setShowForm(false); setForm(makeEmptyForm(dateKey)); }}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-left group ${
-                      isSelected ? "bg-foreground text-background" : "hover:bg-secondary"
-                    }`}
-                  >
-                    <div className={`w-8 text-center flex-shrink-0 ${isSelected ? "text-background" : isToday ? "text-accent" : "text-muted-foreground"}`}>
-                      <div className="text-[10px] font-medium uppercase">{DAYS_FULL[dayOfWeek].slice(0,2)}</div>
-                      <div className={`text-base font-bold leading-tight ${isToday && !isSelected ? "text-foreground" : ""}`}>{Number(d)}</div>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      {tasks.length === 0 ? (
-                        <p className={`text-xs ${isSelected ? "text-background/60" : "text-muted-foreground"}`}>Нет задач</p>
-                      ) : (
-                        <div className="space-y-0.5">
-                          {tasks.slice(0, 3).map((t) => {
-                            const cat = CATEGORIES.find((c) => c.value === t.category)!;
-                            const prio = PRIORITIES.find((p) => p.value === t.priority)!;
-                            return (
-                              <div key={t.id} className="flex items-center gap-1.5">
-                                <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isSelected ? "bg-background/60" : prio.dot}`} />
-                                <span className={`text-xs truncate ${t.done ? "line-through opacity-50" : ""} ${isSelected ? "text-background" : "text-foreground"}`}>
-                                  {t.text}
-                                </span>
-                                {t.time && (
-                                  <span className={`text-[10px] flex-shrink-0 ${isSelected ? "text-background/60" : "text-muted-foreground"}`}>{t.time}</span>
-                                )}
-                                <span className="text-[10px] flex-shrink-0">{cat.emoji}</span>
-                              </div>
-                            );
-                          })}
-                          {tasks.length > 3 && (
-                            <p className={`text-[10px] ${isSelected ? "text-background/60" : "text-muted-foreground"}`}>
-                              +{tasks.length - 3} ещё
-                            </p>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                    <Icon
-                      name="Plus"
-                      size={13}
-                      className={`flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity ${isSelected ? "text-background" : "text-muted-foreground"}`}
-                    />
-                  </button>
-                  {dateKey !== getWeekDays(selected)[6] && (
-                    <div className="h-px bg-border mx-3" />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
 
       {/* Days header */}
       <div className="grid grid-cols-7 mb-2">
@@ -253,6 +167,176 @@ export default function CalendarPage() {
           );
         })}
       </div>
+
+      {/* Week strip — end of current week + toggle button */}
+      {(() => {
+        const currentWeekDays = getWeekDays(todayKey);
+        const sunday = currentWeekDays[6];
+        const [,sm,sd] = sunday.split("-");
+        const weekTaskDays = getWeekDays(
+          (() => {
+            const base = new Date(todayKey + "T00:00:00");
+            base.setDate(base.getDate() + weekOffset * 7);
+            return base.toISOString().split("T")[0];
+          })()
+        );
+        const weekStart = weekTaskDays[0];
+        const weekEnd = weekTaskDays[6];
+        const [,ws_m,ws_d] = weekStart.split("-");
+        const [,we_m,we_d] = weekEnd.split("-");
+        const weekLabel = `${Number(ws_d)} ${MONTHS_SHORT[Number(ws_m)-1]} — ${Number(we_d)} ${MONTHS_SHORT[Number(we_m)-1]}`;
+        const totalWeekTasks = weekTaskDays.reduce((acc, dk) => acc + allTasks.filter(t => t.date === dk).length, 0);
+
+        return (
+          <div className="mb-6">
+            {/* Trigger row: конец недели + кнопка */}
+            <div className="flex items-center gap-2 py-2 px-1">
+              <div className="flex-1 h-px bg-border" />
+              <span className="text-[11px] text-muted-foreground font-medium flex-shrink-0">
+                до вс {Number(sd)} {MONTHS_SHORT[Number(sm)-1]}
+              </span>
+              <button
+                onClick={() => { setShowWeek(!showWeek); setWeekOffset(0); }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[11px] font-medium transition-all flex-shrink-0 ${
+                  showWeek
+                    ? "bg-foreground text-background border-foreground"
+                    : "border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground"
+                }`}
+              >
+                <Icon name="LayoutList" size={12} />
+                {showWeek ? "Свернуть" : `Задачи на неделю${totalWeekTasks > 0 ? ` · ${totalWeekTasks}` : ""}`}
+              </button>
+            </div>
+
+            {/* Expanded week view */}
+            {showWeek && (
+              <div className="bg-card border border-border rounded-2xl overflow-hidden animate-fade-in">
+                {/* Week nav header */}
+                <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+                  <button
+                    onClick={() => setWeekOffset(w => w - 1)}
+                    className="w-7 h-7 rounded-lg border border-border flex items-center justify-center hover:bg-secondary transition-colors"
+                  >
+                    <Icon name="ChevronLeft" size={13} />
+                  </button>
+                  <div className="text-center">
+                    <p className="text-xs font-semibold text-foreground">{weekLabel}</p>
+                    {weekOffset === 0 && (
+                      <p className="text-[10px] text-muted-foreground">Текущая неделя</p>
+                    )}
+                    {weekOffset === 1 && (
+                      <p className="text-[10px] text-muted-foreground">Следующая неделя</p>
+                    )}
+                    {weekOffset === -1 && (
+                      <p className="text-[10px] text-muted-foreground">Прошлая неделя</p>
+                    )}
+                    {Math.abs(weekOffset) > 1 && (
+                      <button
+                        onClick={() => setWeekOffset(0)}
+                        className="text-[10px] text-accent hover:underline"
+                      >
+                        Вернуться к текущей
+                      </button>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => setWeekOffset(w => w + 1)}
+                    className="w-7 h-7 rounded-lg border border-border flex items-center justify-center hover:bg-secondary transition-colors"
+                  >
+                    <Icon name="ChevronRight" size={13} />
+                  </button>
+                </div>
+
+                {/* Days */}
+                <div className="divide-y divide-border">
+                  {weekTaskDays.map((dateKey) => {
+                    const tasks = allTasks.filter((t) => t.date === dateKey)
+                      .sort((a,b) => {
+                        const o: Record<string,number> = {high:0,medium:1,low:2};
+                        return (o[a.priority]??1) - (o[b.priority]??1);
+                      });
+                    const [,dm,dd] = dateKey.split("-");
+                    const dow = new Date(dateKey + "T00:00:00").getDay();
+                    const isToday = dateKey === todayKey;
+                    const isWeekend = dow === 0 || dow === 6;
+
+                    return (
+                      <div key={dateKey} className={isWeekend ? "bg-muted/40" : ""}>
+                        {/* Day header */}
+                        <div className="flex items-center gap-3 px-4 pt-3 pb-1">
+                          <div className={`flex items-center gap-2 ${isToday ? "text-foreground" : "text-muted-foreground"}`}>
+                            <span className={`text-xs font-bold w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                              isToday ? "bg-foreground text-background" : ""
+                            }`}>
+                              {Number(dd)}
+                            </span>
+                            <span className="text-[11px] font-medium uppercase tracking-wide">
+                              {DAYS_FULL[dow].slice(0,2)}, {MONTHS_SHORT[Number(dm)-1]}
+                            </span>
+                          </div>
+                          <div className="flex-1" />
+                          <button
+                            onClick={() => {
+                              setSelected(dateKey);
+                              setShowForm(true);
+                              setForm(makeEmptyForm(dateKey));
+                              setShowWeek(false);
+                            }}
+                            className="w-6 h-6 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+                          >
+                            <Icon name="Plus" size={12} />
+                          </button>
+                        </div>
+
+                        {/* Task rows */}
+                        <div className="px-4 pb-3 space-y-1.5">
+                          {tasks.length === 0 ? (
+                            <p className="text-[11px] text-muted-foreground/60 py-0.5">Нет задач</p>
+                          ) : (
+                            tasks.map((t) => {
+                              const cat = CATEGORIES.find(c => c.value === t.category)!;
+                              const prio = PRIORITIES.find(p => p.value === t.priority)!;
+                              return (
+                                <div
+                                  key={t.id}
+                                  className="flex items-center gap-2 group"
+                                >
+                                  <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${prio.dot}`} />
+                                  <button
+                                    onClick={() => toggleTask(t.id)}
+                                    className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                                      t.done ? "bg-foreground border-foreground" : "border-border hover:border-foreground/50"
+                                    }`}
+                                  >
+                                    {t.done && <Icon name="Check" size={8} className="text-background" />}
+                                  </button>
+                                  <span className={`flex-1 text-xs min-w-0 truncate ${t.done ? "line-through text-muted-foreground" : "text-foreground"}`}>
+                                    {t.text}
+                                  </span>
+                                  <span className="text-[10px] flex-shrink-0">{cat.emoji}</span>
+                                  {t.time && (
+                                    <span className="text-[10px] text-muted-foreground flex-shrink-0">{t.time}</span>
+                                  )}
+                                  <button
+                                    onClick={() => removeTask(t.id)}
+                                    className="w-5 h-5 rounded flex items-center justify-center text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-destructive transition-all flex-shrink-0"
+                                  >
+                                    <Icon name="X" size={10} />
+                                  </button>
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Selected day */}
       <div className="animate-slide-up">
