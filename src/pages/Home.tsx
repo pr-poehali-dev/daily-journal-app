@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import Icon from "@/components/ui/icon";
 import {
   getAllTasks, saveTasks,
-  CATEGORIES,
+  CATEGORIES, PRIORITIES,
   type Task, type TaskPriority, type TaskCategory,
 } from "@/lib/tasks";
 import DatePicker from "@/components/DatePicker";
